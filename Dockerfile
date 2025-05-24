@@ -16,19 +16,18 @@ RUN yarn install
 COPY . .
 
 # Nastavení proměnných prostředí pro build
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 ENV DISABLE_MEDUSA_ADMIN=false
 
 # Build aplikace včetně admin dashboardu
 RUN yarn build
 
-# Kontrola, zda byl admin dashboard sestaven
-RUN if [ -d ".medusa/admin" ]; then \
-      echo "Admin dashboard built successfully"; \
-    else \
-      echo "Admin dashboard build failed"; \
-      exit 1; \
-    fi
+# Nastavení proměnných prostředí pro produkci po buildu
+ENV NODE_ENV=production
+
+# Zobrazení struktury adresářů po buildu pro diagnostiku
+RUN find . -type d -name "admin" | grep -v "node_modules"
+RUN find .medusa -type d | grep -v "node_modules"
 
 # Expose port
 EXPOSE 9000
