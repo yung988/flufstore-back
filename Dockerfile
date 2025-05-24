@@ -4,22 +4,15 @@ WORKDIR /app
 
 # Kopírování souborů projektu
 COPY package.json yarn.lock ./
-COPY . .
 
 # Instalace závislostí
 RUN yarn install
 
+# Kopírování zbytku souborů
+COPY . .
+
 # Build aplikace
 RUN yarn build
-
-# Vytvoření startup skriptu
-RUN echo '#!/bin/sh' > /app/start.sh && \
-    echo 'set -e' >> /app/start.sh && \
-    echo 'echo "Running database migrations..."' >> /app/start.sh && \
-    echo 'yarn predeploy' >> /app/start.sh && \
-    echo 'echo "Starting Medusa server..."' >> /app/start.sh && \
-    echo 'yarn start' >> /app/start.sh && \
-    chmod +x /app/start.sh
 
 # Nastavení proměnných prostředí
 ENV NODE_ENV=production
@@ -27,5 +20,5 @@ ENV NODE_ENV=production
 # Expose port
 EXPOSE 9000
 
-# Spuštění aplikace
-CMD ["/app/start.sh"]
+# Spuštění aplikace s migracemi
+CMD ["/bin/sh", "-c", "echo 'Running database migrations...' && yarn predeploy && echo 'Starting Medusa server...' && yarn start"]
