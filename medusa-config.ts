@@ -17,7 +17,7 @@ module.exports = defineConfig({
   },
   admin: {
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
-    backendUrl: process.env.MEDUSA_BACKEND_URL || "http://api.fluf.store",
+    backendUrl: process.env.MEDUSA_BACKEND_URL || "https://api.fluf.store",
   },
   modules: [
     {
