@@ -1,24 +1,28 @@
 FROM node:20-alpine
 
+# Nastavení pracovního adresáře
 WORKDIR /app
 
-# Kopírování souborů projektu
+# Kopírování package manager souborů pro backend
 COPY package.json yarn.lock ./
 
-# Instalace závislostí
+# Instalace závislostí backendu
 RUN yarn install
 
-# Kopírování zbytku souborů
+# Kopírování celého projektu
 COPY . .
 
-# Build aplikace
+# Vstup do admin složky a build admin rozhraní
+RUN cd admin && yarn install && yarn build
+
+# Build backendu (např. Typescript)
 RUN yarn build
 
-# Nastavení proměnných prostředí
+# Nastavení prostředí
 ENV NODE_ENV=production
 
-# Expose port
+# Exponuj port
 EXPOSE 9000
 
-# Spuštění aplikace s migracemi
-CMD ["/bin/sh", "-c", "echo 'Running database migrations...' && yarn predeploy && echo 'Starting Medusa server...' && yarn start"]
+# Spuštění aplikace s migracemi a serverem
+CMD ["/bin/sh", "-c", "echo 'Running DB migrations...' && yarn predeploy && echo 'Starting Medusa server...' && yarn start"]
