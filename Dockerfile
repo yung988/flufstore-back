@@ -4,9 +4,6 @@ FROM node:20-alpine as builder
 # Install additional build dependencies
 RUN apk add --no-cache git python3 make g++
 
-# Set production environment
-ENV NODE_ENV=production
-
 # Set working directory
 WORKDIR /app
 
@@ -19,8 +16,9 @@ RUN yarn install --frozen-lockfile
 # Copy the rest of the application code
 COPY . ./
 
-# Build the admin panel
-RUN yarn medusa-admin build
+# Build the admin panel explicitly using medusa develop
+RUN yarn add @medusajs/admin
+RUN yarn medusa-admin build --deployment
 
 # Build the Medusa backend
 RUN yarn build
@@ -32,12 +30,13 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-# Copy all necessary files from builder (note the trailing slashes)
+# Copy necessary files from builder
 COPY --from=builder /app/dist/ ./dist/
-COPY --from=builder /app/build/ ./build/
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/yarn.lock ./
 COPY --from=builder /app/node_modules/ ./node_modules/
+# Copy the admin build files to the correct location
+COPY --from=builder /app/build/ ./build/
 
 # Expose the default Medusa port
 EXPOSE 9000
