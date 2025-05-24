@@ -1,28 +1,42 @@
-FROM node:20-alpine
+# Stage 1: Build stage
+FROM node:20-alpine as builder
 
-# Nastavení pracovního adresáře
-WORKDIR /app
+# Install additional build dependencies if needed
+RUN apk add --no-cache git python3 make g++
 
-# Kopírování package manager souborů pro backend
-COPY package.json yarn.lock ./
-
-# Instalace závislostí backendu
-RUN yarn install
-
-# Kopírování celého projektu
-COPY . .
-
-# Vstup do admin složky a build admin rozhraní
-RUN cd admin && yarn install && yarn build
-
-# Build backendu (např. Typescript)
-RUN yarn build
-
-# Nastavení prostředí
+# Set production environment
 ENV NODE_ENV=production
 
-# Exponuj port
+# Set working directory
+WORKDIR /app
+
+# Copy package files first to leverage cache
+COPY package.json yarn.lock ./
+
+# Install dependencies
+RUN yarn install --frozen-lockfile
+
+# Copy the rest of the application code
+COPY . .
+
+# Build both admin and backend
+RUN yarn build
+
+# Stage 2: Production stage
+FROM node:20-alpine
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# Copy only necessary files from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/yarn.lock ./yarn.lock
+COPY --from=builder /app/node_modules ./node_modules
+
+# Expose the default Medusa port
 EXPOSE 9000
 
-# Spuštění aplikace s migracemi a serverem
-CMD ["/bin/sh", "-c", "echo 'Running DB migrations...' && yarn predeploy && echo 'Starting Medusa server...' && yarn start"]
+# Run migrations and start the server
+CMD ["/bin/sh", "-c", "yarn medusa migrations run && yarn medusa start"]
