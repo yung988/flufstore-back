@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
-# Instalace dodatečných závislostí
-RUN apk add --no-cache git python3 make g++
+# Instalace dodatečných závislostí pro build
+RUN apk add --no-cache git python3 make g++ curl
 
 # Nastavení pracovního adresáře
 WORKDIR /app
@@ -15,11 +15,20 @@ RUN yarn install
 # Kopírování zbytku souborů
 COPY . .
 
-# Build aplikace
+# Nastavení proměnných prostředí pro build
+ENV NODE_ENV=production
+ENV DISABLE_MEDUSA_ADMIN=false
+
+# Build aplikace včetně admin dashboardu
 RUN yarn build
 
-# Nastavení proměnných prostředí
-ENV NODE_ENV=production
+# Kontrola, zda byl admin dashboard sestaven
+RUN if [ -d ".medusa/admin" ]; then \
+      echo "Admin dashboard built successfully"; \
+    else \
+      echo "Admin dashboard build failed"; \
+      exit 1; \
+    fi
 
 # Expose port
 EXPOSE 9000
