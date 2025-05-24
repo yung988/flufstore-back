@@ -1,42 +1,28 @@
-# Stage 1: Build stage
-FROM node:20-alpine as builder
-
-# Install additional build dependencies if needed
-RUN apk add --no-cache git python3 make g++
-
-# Set production environment
-ENV NODE_ENV=production
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files first to leverage cache
-COPY package.json yarn.lock ./
-
-# Install dependencies
-RUN yarn install --frozen-lockfile
-
-# Copy the rest of the application code
-COPY . .
-
-# Build both admin and backend
-RUN yarn build
-
-# Stage 2: Production stage
 FROM node:20-alpine
 
-ENV NODE_ENV=production
+# Instalace dodatečných závislostí
+RUN apk add --no-cache git python3 make g++
 
+# Nastavení pracovního adresáře
 WORKDIR /app
 
-# Copy only necessary files from builder
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/yarn.lock ./yarn.lock
-COPY --from=builder /app/node_modules ./node_modules
+# Kopírování souborů projektu
+COPY package.json yarn.lock ./
 
-# Expose the default Medusa port
+# Instalace závislostí
+RUN yarn install
+
+# Kopírování zbytku souborů
+COPY . .
+
+# Build aplikace
+RUN yarn build
+
+# Nastavení proměnných prostředí
+ENV NODE_ENV=production
+
+# Expose port
 EXPOSE 9000
 
-# Run migrations and start the server
-CMD ["/bin/sh", "-c", "yarn medusa migrations run && yarn medusa start"]
+# Spuštění aplikace s migracemi
+CMD ["/bin/sh", "-c", "echo 'Running database migrations...' && yarn predeploy && echo 'Starting Medusa server...' && yarn start"]
